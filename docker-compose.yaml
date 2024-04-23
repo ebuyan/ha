@@ -8,6 +8,8 @@ services:
     privileged: true
     ports:
       - "8123:8123"
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0
     environment:
       - TZ=Europe/Moscow
     volumes:
