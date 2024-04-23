@@ -13,3 +13,16 @@ services:
     volumes:
       - ./homeassistant/:/config
       - /etc/localtime:/etc/localtime:ro
+
+  hass-configurator:
+    container_name: hassconf
+    image: causticlab/hass-configurator-docker
+    restart: unless-stopped
+    environment:
+      - HC_BASEPATH=/hass-config
+      - HC_DIRSFIRST=true
+    ports:
+      - "3218:3218/tcp"
+    volumes:
+      - ./fileeditor:/config
+      - ./homeassistant:/hass-config
