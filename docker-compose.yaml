@@ -8,6 +8,7 @@ services:
     privileged: true
     ports:
       - "8123:8123"
+      - "51827:51827"
     devices:
       - /dev/ttyUSB0:/dev/ttyUSB0
     environment:
