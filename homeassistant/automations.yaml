@@ -1,0 +1,211 @@
+- id: '1713959629455'
+  alias: Ворота
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - switch.tasmota_tasmota4
+    to: 'on'
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 1
+  condition: []
+  action:
+  - service: switch.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.tasmota_tasmota4
+  mode: single
+- id: '1713959864031'
+  alias: Котел
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - switch.tasmota_9
+    to: 'on'
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 1
+  condition: []
+  action:
+  - service: switch.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.tasmota_9
+  mode: single
+- id: '1713963931921'
+  alias: Включение отопления
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - switch.tasmota_3
+    to: 'off'
+    from: 'on'
+  - platform: state
+    entity_id:
+    - switch.tasmota_3
+    to: 'on'
+    from: 'off'
+  condition: []
+  action:
+  - service: switch.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.tasmota_9
+  mode: single
+- id: '1713986620401'
+  alias: Открытие штор
+  description: ''
+  trigger:
+  - platform: time
+    at: 06:30:00
+  condition: []
+  action:
+  - service: cover.open_cover
+    metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - cover.hall_curtain
+      - cover.kitchen_curtain
+      - cover.bedroom_curtain
+  mode: single
+- id: '1713987132615'
+  alias: Закрытие штор
+  description: ''
+  trigger:
+  - platform: sun
+    event: sunset
+    offset: '+1'
+  condition: []
+  action:
+  - service: cover.close_cover
+    metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - cover.hall_curtain
+      - cover.kitchen_curtain
+      - cover.bedroom_curtain
+  mode: single
+- id: '1714061753461'
+  alias: Мониторинг воды
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - sensor.tasmota_counter_c1
+  condition: []
+  action:
+  - service: counter.increment
+    metadata: {}
+    data: {}
+    target:
+      entity_id: counter.water
+  mode: single
+- id: '1714065051725'
+  alias: Автоматическое включение котла
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - switch.tasmota_9
+    from: 'on'
+    to: 'off'
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 30
+  condition:
+  - condition: state
+    entity_id: climate.otoplenie
+    state: heat
+  - condition: state
+    entity_id: switch.tasmota_3
+    state: 'on'
+  - condition: and
+    conditions:
+    - condition: numeric_state
+      entity_id: sensor.tasmota_energy_power
+      below: 2000
+    - condition: numeric_state
+      entity_id: sensor.tasmota_energy_power_2
+      below: 2000
+    - condition: numeric_state
+      entity_id: sensor.tasmota_energy_power_3
+      below: 2000
+  action:
+  - service: switch.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.tasmota_9
+  mode: single
+- id: '1714065211948'
+  alias: Автоматическое выключение котла
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - switch.tasmota_9
+    from: 'on'
+    to: 'off'
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 30
+  condition:
+  - condition: state
+    entity_id: climate.otoplenie
+    state: heat
+  - condition: state
+    entity_id: switch.tasmota_3
+    state: 'off'
+  - condition: and
+    conditions:
+    - condition: numeric_state
+      entity_id: sensor.tasmota_energy_power
+      above: 2000
+    - condition: numeric_state
+      entity_id: sensor.tasmota_energy_power_2
+      above: 2000
+    - condition: numeric_state
+      entity_id: sensor.tasmota_energy_power_3
+      above: 2000
+  action:
+  - service: switch.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.tasmota_9
+  mode: single
+- id: '1714070196345'
+  alias: Нотификации
+  description: ''
+  trigger:
+  - platform: time
+    at: 01:50:00
+  condition: []
+  action:
+  - service: notify.me
+    data:
+      message: 'Электроэнергия: {{ float(states(''sensor.tasmota_energy_today''))
+        + float(states(''sensor.tasmota_energy_today_2'')) + float(states(''sensor.tasmota_energy_today_3''))
+        | round(1) }} кВт
+
+        Вода: {{ states(''counter.water'') }} л
+
+        '
+  - service: counter.reset
+    metadata: {}
+    data: {}
+    target:
+      entity_id: counter.water
+  mode: single

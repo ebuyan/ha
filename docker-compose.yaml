@@ -6,9 +6,7 @@ services:
     image: "ghcr.io/home-assistant/home-assistant:stable"
     restart: unless-stopped
     privileged: true
-    ports:
-      - "8123:8123"
-      - "51827:51827"
+    network_mode: "host"
     devices:
       - /dev/ttyUSB0:/dev/ttyUSB0
     environment:

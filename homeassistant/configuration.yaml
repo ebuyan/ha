@@ -1,0 +1,122 @@
+
+# Loads default set of integrations. Do not remove.
+default_config:
+
+# Load frontend themes from the themes folder
+frontend:
+  themes: !include_dir_merge_named themes
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
+homekit:
+  port: 51827
+
+http:
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - 172.20.0.1
+
+telegram_bot:
+  - platform: polling
+    api_key: !secret telegram_token
+    parse_mode: html
+    allowed_chat_ids:
+      - 623375633
+
+notify:
+  - name: me
+    platform: telegram
+    chat_id: 623375633
+
+climate:
+  - platform: generic_thermostat
+    name: Отопление
+    heater: switch.tasmota_3
+    target_sensor: sensor.tasmota_am2301_temperature
+    min_temp: 17
+    max_temp: 24
+    target_temp: 22
+    cold_tolerance: 1
+    hot_tolerance: 0
+
+counter:
+  water:
+    initial: 0
+    step: 10
+
+template:
+  - sensor: 
+    - name: Потребление воды
+      unit_of_measurement: L
+      device_class: water
+      state_class: total_increasing
+      state: "{{states('counter.water') }}"
+
+cover:
+  - platform: template
+    covers:
+      hall_curtain:
+        friendly_name: "Зал"
+        open_cover:
+          service: cover.set_cover_position
+          data:
+            entity_id: cover.lumi_lumi_curtain_cover
+            position: 93
+        close_cover:
+          service: cover.open_cover
+          data:
+            entity_id: cover.lumi_lumi_curtain_cover
+        stop_cover:
+          service: cover.stop_cover
+          data:
+            entity_id: cover.lumi_lumi_curtain_cover
+        set_cover_position:
+          service: cover.set_cover_position
+          data:
+            position: "{{ (position * 0.9) | round }}"
+        position_template: "{{ state_attr('cover.lumi_lumi_curtain_cover', 'current_position') }}"
+        
+      kitchen_curtain:
+        friendly_name: "Кухня"
+        open_cover:
+          service: cover.set_cover_position
+          data:
+            entity_id: cover.lumi_lumi_curtain_cover_3
+            position: 93
+        close_cover:
+          service: cover.open_cover
+          data:
+            entity_id: cover.lumi_lumi_curtain_cover_3
+        stop_cover:
+          service: cover.stop_cover
+          data:
+            entity_id: cover.lumi_lumi_curtain_cover_3
+        set_cover_position:
+          service: cover.set_cover_position
+          data:
+            position: "{{ (position * 0.9) | round }}"
+        position_template: "{{ state_attr('cover.lumi_lumi_curtain_cover_3', 'current_position') }}"
+        
+      bedroom_curtain:
+        friendly_name: "Спальня"
+        open_cover:
+          service: cover.set_cover_position
+          data:
+            entity_id: cover.lumi_lumi_curtain_cover_2
+            position: 70
+        close_cover:
+          service: cover.open_cover
+          data:
+            entity_id: cover.lumi_lumi_curtain_cover_2
+        stop_cover:
+          service: cover.stop_cover
+          data:
+            entity_id: cover.lumi_lumi_curtain_cover_2
+        set_cover_position:
+          service: cover.set_cover_position
+          data:
+            position: "{{ (position * 0.7) | round }}"
+        position_template: "{{ state_attr('cover.lumi_lumi_curtain_cover_2', 'current_position') }}"
+        
