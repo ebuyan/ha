@@ -1,4 +1,3 @@
-
 # Loads default set of integrations. Do not remove.
 default_config:
 
@@ -9,14 +8,14 @@ frontend:
 automation: !include automations.yaml
 script: !include scripts.yaml
 scene: !include scenes.yaml
-
+# mDNS service in /etc/avahi/service/ha.service
 homekit:
   port: 51827
-
+# For nginx https proxy
 http:
   use_x_forwarded_for: true
   trusted_proxies:
-    - 172.20.0.1
+    - 127.0.0.1
 
 telegram_bot:
   - platform: polling
@@ -24,7 +23,6 @@ telegram_bot:
     parse_mode: html
     allowed_chat_ids:
       - 623375633
-
 notify:
   - name: me
     platform: telegram
@@ -46,6 +44,11 @@ counter:
     initial: 0
     step: 10
 
+rest_command:
+  ping_autopolive:
+    url: "http://192.168.0.106/update"
+    method: GET
+
 template:
   - sensor: 
     - name: Потребление воды
@@ -53,70 +56,130 @@ template:
       device_class: water
       state_class: total_increasing
       state: "{{states('counter.water') }}"
+      
+##################################
+# Irrigate zone selectbox       #
+##################################
+input_select:
+  irrigate_zone:
+    name: Irrigate zone
+    options:
+      - 1
+      - 2
+      - 3
+      - 4
 
-cover:
+input_datetime:
+  irrigate_evning:
+    name: Автополив вечером
+    has_date: false
+    has_time: true
+  irrigate_morning:
+    name: Автополив утром
+    has_date: false
+    has_time: true
+
+input_boolean:
+  irrigate_evning:
+    name: Автополив вечером
+    icon: mdi:water-pump
+  irrigate_morning:
+    name: Автополив утром
+    icon: mdi:water-pump
+  irrigate_skip_evning:
+    name: Автополив пропустить вечером
+    icon: mdi:toggle-switch-outline
+  irrigate_skip_morning:
+    name: Автополив пропустить утром
+    icon: mdi:toggle-switch-outline
+  irrigate_availeble:
+    name: Автополив доступен
+    icon: mdi:toggle-switch-outline
+  clean_kitchen:
+    name: Уборка кухни
+    icon: mdi:toggle-switch-outline
+
+input_text:
+  irrigation_active_zone:
+    initial: inactive
+  zone_action_result:
+    name: "Zone Action Result"
+
+##################################
+# Irrigation zone time selection   #
+##################################
+input_number:
+  irrigate_timer_1:
+    name: Timer zone1
+    min: 1
+    max: 60
+    step: 1
+    unit_of_measurement: мин.
+    icon: mdi:timer-cog
+
+  irrigate_timer_2:
+    name: Timer zone2
+    min: 1
+    max: 60
+    step: 1
+    unit_of_measurement: мин.
+    icon: mdi:timer-cog
+
+  irrigate_timer_3:
+    name: Timer zone3
+    min: 1
+    max: 60
+    step: 1
+    unit_of_measurement: мин.
+    icon: mdi:timer-cog
+
+  irrigate_timer_4:
+    name: Timer zone4
+    min: 1
+    max: 60
+    step: 1
+    unit_of_measurement: мин.
+    icon: mdi:timer-cog
+
+################################################
+# Selected Sprinkler switch script & timer #
+################################################
+timer:
+  irrigation_time_remaining:
+    name: Remaining Time
+    duration: "00:00:00"
+
+switch:
   - platform: template
-    covers:
-      hall_curtain:
-        friendly_name: "Зал"
-        open_cover:
-          service: cover.set_cover_position
-          data:
-            entity_id: cover.lumi_lumi_curtain_cover
-            position: 93
-        close_cover:
-          service: cover.open_cover
-          data:
-            entity_id: cover.lumi_lumi_curtain_cover
-        stop_cover:
-          service: cover.stop_cover
-          data:
-            entity_id: cover.lumi_lumi_curtain_cover
-        set_cover_position:
-          service: cover.set_cover_position
-          data:
-            position: "{{ (position * 0.9) | round }}"
-        position_template: "{{ state_attr('cover.lumi_lumi_curtain_cover', 'current_position') }}"
-        
-      kitchen_curtain:
-        friendly_name: "Кухня"
-        open_cover:
-          service: cover.set_cover_position
-          data:
-            entity_id: cover.lumi_lumi_curtain_cover_3
-            position: 93
-        close_cover:
-          service: cover.open_cover
-          data:
-            entity_id: cover.lumi_lumi_curtain_cover_3
-        stop_cover:
-          service: cover.stop_cover
-          data:
-            entity_id: cover.lumi_lumi_curtain_cover_3
-        set_cover_position:
-          service: cover.set_cover_position
-          data:
-            position: "{{ (position * 0.9) | round }}"
-        position_template: "{{ state_attr('cover.lumi_lumi_curtain_cover_3', 'current_position') }}"
-        
-      bedroom_curtain:
-        friendly_name: "Спальня"
-        open_cover:
-          service: cover.set_cover_position
-          data:
-            entity_id: cover.lumi_lumi_curtain_cover_2
-            position: 70
-        close_cover:
-          service: cover.open_cover
-          data:
-            entity_id: cover.lumi_lumi_curtain_cover_2
-        stop_cover:
-          service: cover.stop_cover
-          data:
-            entity_id: cover.lumi_lumi_curtain_cover_2
-        set_cover_position:
-          service: cover.set_cover_position
-          data:
-            position: "{{ (position * 0.7) | round }}"
-        position_template: "{{ state_attr('cover.lumi_lumi_curtain_cover_2', 'current_position') }}"
+    switches:
+      irrigate_lawn:
+        friendly_name: "Sprinkler On/Off"
+        turn_on:
+          - service: script.turn_on
+            data:
+              entity_id: script.irrigation_on
+          - service: timer.start
+            target:
+              entity_id: timer.irrigation_time_remaining
+            data:
+              duration: "{{ states('input_number.irrigate_timer_' ~ states('input_select.irrigate_zone')) | int  * 60 }}"
+          - service: input_text.set_value
+            target:
+              entity_id: input_text.irrigation_active_zone
+            data:
+              value: "{{ states('input_select.irrigate_zone') }}"
+        turn_off:
+          - service: script.turn_on
+            data:
+              entity_id: script.irrigation_off
+          - service: timer.finish
+            target:
+              entity_id: timer.irrigation_time_remaining
+          - service: input_text.set_value
+            target:
+              entity_id: input_text.irrigation_active_zone
+            data:
+              value: inactive
+        icon_template: >-
+          mdi:water-pump
         

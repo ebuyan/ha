@@ -19,7 +19,7 @@
       entity_id: switch.tasmota_tasmota4
   mode: single
 - id: '1713959864031'
-  alias: Котел
+  alias: Котел. Эмуляция кнопки
   description: ''
   trigger:
   - platform: state
@@ -39,7 +39,7 @@
       entity_id: switch.tasmota_9
   mode: single
 - id: '1713963931921'
-  alias: Включение отопления
+  alias: Котел. Включение отопления
   description: ''
   trigger:
   - platform: state
@@ -60,41 +60,6 @@
     target:
       entity_id: switch.tasmota_9
   mode: single
-- id: '1713986620401'
-  alias: Открытие штор
-  description: ''
-  trigger:
-  - platform: time
-    at: 06:30:00
-  condition: []
-  action:
-  - service: cover.open_cover
-    metadata: {}
-    data: {}
-    target:
-      entity_id:
-      - cover.hall_curtain
-      - cover.kitchen_curtain
-      - cover.bedroom_curtain
-  mode: single
-- id: '1713987132615'
-  alias: Закрытие штор
-  description: ''
-  trigger:
-  - platform: sun
-    event: sunset
-    offset: '+1'
-  condition: []
-  action:
-  - service: cover.close_cover
-    metadata: {}
-    data: {}
-    target:
-      entity_id:
-      - cover.hall_curtain
-      - cover.kitchen_curtain
-      - cover.bedroom_curtain
-  mode: single
 - id: '1714061753461'
   alias: Мониторинг воды
   description: ''
@@ -111,7 +76,7 @@
       entity_id: counter.water
   mode: single
 - id: '1714065051725'
-  alias: Автоматическое включение котла
+  alias: Котел. Автоматическое включение по мощности
   description: ''
   trigger:
   - platform: state
@@ -149,7 +114,7 @@
       entity_id: switch.tasmota_9
   mode: single
 - id: '1714065211948'
-  alias: Автоматическое выключение котла
+  alias: Котел. Автоматическое выключение по мощности
   description: ''
   trigger:
   - platform: state
@@ -196,8 +161,8 @@
   action:
   - service: notify.me
     data:
-      message: 'Электроэнергия: {{ float(states(''sensor.tasmota_energy_today''))
-        + float(states(''sensor.tasmota_energy_today_2'')) + float(states(''sensor.tasmota_energy_today_3''))
+      message: 'Электроэнергия: {{ (float(states(''sensor.tasmota_energy_today''))
+        + float(states(''sensor.tasmota_energy_today_2'')) + float(states(''sensor.tasmota_energy_today_3'')))
         | round(1) }} кВт
 
         Вода: {{ states(''counter.water'') }} л
@@ -208,4 +173,294 @@
     data: {}
     target:
       entity_id: counter.water
+  mode: single
+- id: '1714286749734'
+  alias: Шторы. Закрытие кухни
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - switch.lumi_lumi_curtain_switch_3
+    from: 'on'
+    to: 'off'
+  condition: []
+  action:
+  - service: cover.set_cover_position
+    metadata: {}
+    data:
+      position: 93
+    target:
+      entity_id: cover.lumi_lumi_curtain_cover_3
+  mode: single
+- id: '1714287233643'
+  alias: Шторы. Закрытие зал
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - switch.lumi_lumi_curtain_switch
+    from: 'on'
+    to: 'off'
+  condition: []
+  action:
+  - service: cover.set_cover_position
+    metadata: {}
+    data:
+      position: 93
+    target:
+      entity_id: cover.lumi_lumi_curtain_cover
+  mode: single
+- id: '1714287359840'
+  alias: Шторы. Закрытие спальня
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - switch.lumi_lumi_curtain_switch_2
+    from: 'on'
+    to: 'off'
+  condition: []
+  action:
+  - service: cover.set_cover_position
+    metadata: {}
+    data:
+      position: 70
+    target:
+      entity_id: cover.lumi_lumi_curtain_cover_2
+  mode: single
+- id: '1714293460781'
+  alias: Ping устройств
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - switch.tasmota_9
+    - switch.tasmota_11
+    - switch.tasmota_7
+    - switch.tasmota_5
+    - switch.tasmota_tasmota2
+    - switch.tasmota_8
+    - switch.tasmota_6
+    - light.tasmota
+    - light.light_kitchen_street
+    - sensor.tasmota_energy_power
+    - switch.tasmota_4
+    - sensor.tasmota_energy_power_2
+    - sensor.tasmota_energy_power_3
+    - switch.lumi_lumi_curtain_switch
+    - switch.lumi_lumi_curtain_switch_3
+    - switch.lumi_lumi_curtain_switch_2
+    - sensor.tasmota_am2301_temperature
+    - binary_sensor.lumi_lumi_sensor_wleak_aq1_moisture
+    to: unavailable
+    for:
+      hours: 0
+      minutes: 5
+      seconds: 0
+  - platform: state
+    entity_id:
+    - input_boolean.irrigate_availeble
+    from: 'on'
+    to: 'off'
+    for:
+      hours: 0
+      minutes: 5
+      seconds: 0
+  condition: []
+  action:
+  - service: notify.me
+    data:
+      message: Некоторые устройства не доступны
+  mode: single
+- id: '1714395961414'
+  alias: Автополив. MQTT hook
+  description: 'MQTT listener which receives response about triggered irrigation command. '
+  trigger:
+  - platform: mqtt
+    topic: hunter/X-CORE/result
+  condition: []
+  action:
+  - service: input_text.set_value
+    data_template:
+      entity_id: input_text.zone_action_result
+      value: '{{ trigger.payload_json.action }}'
+  mode: single
+- id: '1714396039835'
+  alias: Автополив. Включение вечером
+  description: ''
+  trigger:
+  - platform: time
+    at: input_datetime.irrigate_evning
+  condition:
+  - condition: state
+    entity_id: input_boolean.irrigate_evning
+    state: 'on'
+  - condition: state
+    entity_id: input_boolean.irrigate_skip_evning
+    state: 'off'
+  action:
+  - service: input_select.select_option
+    data_template:
+      entity_id: input_select.irrigate_zone
+      option: '2'
+  - service: switch.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.irrigate_lawn
+  - wait_for_trigger:
+    - platform: state
+      entity_id:
+      - switch.irrigate_lawn
+      from: 'on'
+      to: 'off'
+      for:
+        hours: 0
+        minutes: 0
+        seconds: 10
+  - service: input_select.select_option
+    data_template:
+      entity_id: input_select.irrigate_zone
+      option: '1'
+  - if:
+    - condition: state
+      entity_id: input_boolean.irrigate_skip_evning
+      state: 'on'
+    then:
+    - stop: ''
+  - service: switch.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.irrigate_lawn
+  - wait_for_trigger:
+    - platform: state
+      entity_id:
+      - switch.irrigate_lawn
+      from: 'on'
+      to: 'off'
+      for:
+        hours: 0
+        minutes: 0
+        seconds: 10
+  - service: input_select.select_option
+    data_template:
+      entity_id: input_select.irrigate_zone
+      option: '3'
+  - if:
+    - condition: state
+      entity_id: input_boolean.irrigate_skip_evning
+      state: 'on'
+    then:
+    - stop: ''
+  - service: switch.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.irrigate_lawn
+  - wait_for_trigger:
+    - platform: state
+      entity_id:
+      - switch.irrigate_lawn
+      from: 'on'
+      to: 'off'
+      for:
+        hours: 0
+        minutes: 0
+        seconds: 10
+  - service: input_select.select_option
+    data_template:
+      entity_id: input_select.irrigate_zone
+      option: '4'
+  - if:
+    - condition: state
+      entity_id: input_boolean.irrigate_skip_evning
+      state: 'on'
+    then:
+    - stop: ''
+  - service: switch.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.irrigate_lawn
+  mode: single
+- id: '1714542925010'
+  alias: Автополив. Отключение таймера
+  description: ''
+  trigger:
+  - platform: event
+    event_type: timer.finished
+    event_data:
+      entity_id: timer.irrigation_time_remaining
+  condition: []
+  action:
+  - service: switch.turn_off
+    data: {}
+    target:
+      entity_id: switch.irrigate_lawn
+  mode: single
+- id: '1714552765247'
+  alias: Автополив. Переключить пропустить сегодня
+  description: ''
+  trigger:
+  - platform: time
+    at: 07:00:00
+  condition: []
+  action:
+  - service: input_boolean.turn_off
+    target:
+      entity_id: input_boolean.irrigate_skip_evning
+  - service: input_boolean.turn_off
+    target:
+      entity_id: input_boolean.irrigate_skip_morning
+  mode: single
+- id: '1714579193096'
+  alias: Автополив. Ping
+  description: ''
+  trigger:
+  - platform: time_pattern
+    minutes: /1
+  condition: []
+  action:
+  - service: rest_command.ping_autopolive
+    response_variable: traefik_response
+    data: {}
+  - if:
+    - condition: template
+      value_template: '{{ traefik_response[''status''] == 200 }}'
+    then:
+    - service: input_boolean.turn_on
+      metadata: {}
+      data: {}
+      target:
+        entity_id: input_boolean.irrigate_availeble
+    else:
+    - service: input_boolean.turn_off
+      metadata: {}
+      data: {}
+      target:
+        entity_id: input_boolean.irrigate_availeble
+  mode: single
+- id: '1714584809649'
+  alias: Уборка. Кухня
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - input_boolean.clean_kitchen
+    from: 'off'
+    to: 'on'
+  condition: []
+  action:
+  - service: dreame_vacuum.vacuum_clean_segment
+    data:
+      segments: 5
+    target:
+      entity_id:
+      - vacuum.zhorik
+  - service: input_boolean.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id: input_boolean.clean_kitchen
   mode: single
