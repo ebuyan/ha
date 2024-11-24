@@ -4,6 +4,8 @@ default_config:
 # Load frontend themes from the themes folder
 frontend:
   themes: !include_dir_merge_named themes
+  extra_module_url:
+    - /hacsfiles/ha-yandex-icons/yandex-icons.js
 
 automation: !include automations.yaml
 script: !include scripts.yaml
@@ -28,14 +30,18 @@ notify:
     platform: telegram
     chat_id: 623375633
 
+yandex_station:
+  include:
+    - name: Кондиционер
+      current_temperature: "{{ states('sensor.zigbee_temperature') }}"
+
 climate:
   - platform: generic_thermostat
     name: Отопление
-    heater: switch.tasmota_3
-    target_sensor: sensor.tasmota_am2301_temperature
-    min_temp: 17
-    max_temp: 24
-    target_temp: 22
+    heater: input_boolean.boiler
+    target_sensor: sensor.zigbee_temperature
+    min_temp: 20
+    max_temp: 25
     cold_tolerance: 1
     hot_tolerance: 0
 
@@ -48,6 +54,7 @@ rest_command:
   ping_autopolive:
     url: "http://192.168.0.106/update"
     method: GET
+    timeout: 2
 
 template:
   - sensor: 
@@ -56,10 +63,12 @@ template:
       device_class: water
       state_class: total_increasing
       state: "{{states('counter.water') }}"
-      
-##################################
-# Irrigate zone selectbox       #
-##################################
+    - name: Потребление электроэнергии
+      unit_of_measurement: Wh
+      device_class: energy
+      state_class: total
+      state: "{{states('input_number.energy_total') }}"
+
 input_select:
   irrigate_zone:
     name: Irrigate zone
@@ -76,6 +85,10 @@ input_datetime:
     has_time: true
   irrigate_morning:
     name: Автополив утром
+    has_date: false
+    has_time: true
+  fumigator_time:
+    name: Фумигатор время
     has_date: false
     has_time: true
 
@@ -98,6 +111,21 @@ input_boolean:
   clean_kitchen:
     name: Уборка кухни
     icon: mdi:toggle-switch-outline
+  boiler:
+    name: Котел
+    icon: mdi:toggle-switch-outline
+  fumigator_enabled:
+    name: Фумигатор
+    icon: mdi:toggle-switch-outline
+  curtain_kitchen:
+    name: Шторы кухня (input)
+    icon: mdi:curtains-closed
+  curtain_hall:
+    name: Шторы зал (input)
+    icon: mdi:curtains-closed
+  curtain_bedroom:
+    name: Шторы спальня (input)
+    icon: mdi:curtains-closed
 
 input_text:
   irrigation_active_zone:
@@ -116,7 +144,6 @@ input_number:
     step: 1
     unit_of_measurement: мин.
     icon: mdi:timer-cog
-
   irrigate_timer_2:
     name: Timer zone2
     min: 1
@@ -124,7 +151,6 @@ input_number:
     step: 1
     unit_of_measurement: мин.
     icon: mdi:timer-cog
-
   irrigate_timer_3:
     name: Timer zone3
     min: 1
@@ -132,7 +158,6 @@ input_number:
     step: 1
     unit_of_measurement: мин.
     icon: mdi:timer-cog
-
   irrigate_timer_4:
     name: Timer zone4
     min: 1
@@ -140,6 +165,19 @@ input_number:
     step: 1
     unit_of_measurement: мин.
     icon: mdi:timer-cog
+  fumigator_timer:
+    name: Фумигатор время
+    min: 1
+    max: 8
+    step: 1
+    unit_of_measurement: ч.
+    icon: mdi:timer-cog
+  energy_total:
+    name: Электороэнергия
+    min: 0
+    max: 150000
+    unit_of_measurement: Wh
+    icon: mdi:lightning-bolt
 
 ################################################
 # Selected Sprinkler switch script & timer #
