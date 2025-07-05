@@ -44,12 +44,12 @@
   trigger:
   - platform: state
     entity_id:
-    - switch.tasmota_3
+    - input_boolean.boiler
     to: 'off'
     from: 'on'
   - platform: state
     entity_id:
-    - switch.tasmota_3
+    - input_boolean.boiler
     to: 'on'
     from: 'off'
   condition: []
@@ -93,7 +93,7 @@
     entity_id: climate.otoplenie
     state: heat
   - condition: state
-    entity_id: switch.tasmota_3
+    entity_id: input_boolean.boiler
     state: 'on'
   - condition: and
     conditions:
@@ -131,7 +131,7 @@
     entity_id: climate.otoplenie
     state: heat
   - condition: state
-    entity_id: switch.tasmota_3
+    entity_id: input_boolean.boiler
     state: 'off'
   - condition: and
     conditions:
@@ -175,14 +175,14 @@
       entity_id: counter.water
   mode: single
 - id: '1714286749734'
-  alias: Шторы. Закрытие кухни
+  alias: Шторы. Открытие Кухня
   description: ''
   trigger:
   - platform: state
     entity_id:
-    - switch.lumi_lumi_curtain_switch_3
-    from: 'on'
+    - input_boolean.curtain_kitchen
     to: 'off'
+    from: 'on'
   condition: []
   action:
   - service: cover.set_cover_position
@@ -193,12 +193,12 @@
       entity_id: cover.lumi_lumi_curtain_cover_3
   mode: single
 - id: '1714287233643'
-  alias: Шторы. Закрытие зал
+  alias: Шторы. Открытие зал
   description: ''
   trigger:
   - platform: state
     entity_id:
-    - switch.lumi_lumi_curtain_switch
+    - input_boolean.curtain_hall
     from: 'on'
     to: 'off'
   condition: []
@@ -211,14 +211,14 @@
       entity_id: cover.lumi_lumi_curtain_cover
   mode: single
 - id: '1714287359840'
-  alias: Шторы. Закрытие спальня
+  alias: Шторы. Открытие спальня
   description: ''
   trigger:
   - platform: state
     entity_id:
-    - switch.lumi_lumi_curtain_switch_2
-    from: 'on'
+    - input_boolean.curtain_bedroom
     to: 'off'
+    from: 'on'
   condition: []
   action:
   - service: cover.set_cover_position
@@ -250,7 +250,7 @@
     - switch.lumi_lumi_curtain_switch
     - switch.lumi_lumi_curtain_switch_3
     - switch.lumi_lumi_curtain_switch_2
-    - sensor.tasmota_am2301_temperature
+    - sensor.zigbee_temperature
     - binary_sensor.lumi_lumi_sensor_wleak_aq1_moisture
     to: unavailable
     for:
@@ -303,25 +303,6 @@
     data_template:
       entity_id: input_select.irrigate_zone
       option: '2'
-  - service: switch.turn_on
-    metadata: {}
-    data: {}
-    target:
-      entity_id: switch.irrigate_lawn
-  - wait_for_trigger:
-    - platform: state
-      entity_id:
-      - switch.irrigate_lawn
-      from: 'on'
-      to: 'off'
-      for:
-        hours: 0
-        minutes: 0
-        seconds: 10
-  - service: input_select.select_option
-    data_template:
-      entity_id: input_select.irrigate_zone
-      option: '1'
   - if:
     - condition: state
       entity_id: input_boolean.irrigate_skip_evning
@@ -383,6 +364,31 @@
     data: {}
     target:
       entity_id: switch.irrigate_lawn
+  - wait_for_trigger:
+    - platform: state
+      entity_id:
+      - switch.irrigate_lawn
+      from: 'on'
+      to: 'off'
+      for:
+        hours: 0
+        minutes: 0
+        seconds: 10
+  - service: input_select.select_option
+    data_template:
+      entity_id: input_select.irrigate_zone
+      option: '1'
+  - if:
+    - condition: state
+      entity_id: input_boolean.irrigate_skip_evning
+      state: 'on'
+    then:
+    - stop: ''
+  - service: switch.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.irrigate_lawn
   mode: single
 - id: '1714542925010'
   alias: Автополив. Отключение таймера
@@ -422,6 +428,11 @@
     minutes: /1
   condition: []
   action:
+  - service: input_boolean.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id: input_boolean.irrigate_availeble
   - service: rest_command.ping_autopolive
     response_variable: traefik_response
     data: {}
@@ -463,4 +474,248 @@
     data: {}
     target:
       entity_id: input_boolean.clean_kitchen
+  mode: single
+- id: '1714988828391'
+  alias: Фумигатор
+  description: ''
+  trigger:
+  - platform: time
+    at: input_datetime.fumigator_time
+  condition:
+  - condition: state
+    entity_id: input_boolean.fumigator_enabled
+    state: 'on'
+  action:
+  - service: switch.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.lumi_lumi_plug_maeu01_switch
+  - delay: '{{ states(''input_number.fumigator_timer'') | multiply(3600) | int }}'
+  - service: switch.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.lumi_lumi_plug_maeu01_switch
+  mode: single
+- id: '1714999615150'
+  alias: Потребление электроэнергии
+  description: ''
+  trigger:
+  - platform: time
+    at: 01:50:00
+  condition: []
+  action:
+  - service: input_number.set_value
+    metadata: {}
+    data:
+      value: '{{ float(states(''input_number.energy_total'')) + (float(states(''sensor.tasmota_energy_today''))
+        + float(states(''sensor.tasmota_energy_today_2'')) + float(states(''sensor.tasmota_energy_today_3'')))
+        }}'
+    target:
+      entity_id: input_number.energy_total
+  mode: single
+- id: '1719852476111'
+  alias: Автополив. Включение утром
+  description: ''
+  trigger:
+  - platform: time
+    at: input_datetime.irrigate_morning
+  condition:
+  - condition: state
+    entity_id: input_boolean.irrigate_morning
+    state: 'on'
+  - condition: state
+    entity_id: input_boolean.irrigate_skip_morning
+    state: 'off'
+  action:
+  - service: input_select.select_option
+    data_template:
+      entity_id: input_select.irrigate_zone
+      option: '2'
+  - service: switch.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.irrigate_lawn
+  mode: single
+- id: '1724849977055'
+  alias: Свет коридор app
+  description: ''
+  trigger:
+  - event_type: ios.action_fired
+    event_data:
+      actionID: 9CDFA50D-3808-451F-88CB-DB82ECE619B5
+    platform: event
+  condition: []
+  action:
+  - service: switch.toggle
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.tasmota_8
+  mode: single
+- id: '1724850283575'
+  alias: Свет гостевая app
+  description: ''
+  trigger:
+  - event_data:
+      actionID: 2DC2D0A0-BC5F-4532-AAC2-DB9A038CD40D
+    platform: event
+    event_type: ios.action_fired
+  condition: []
+  action:
+  - service: switch.toggle
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.tasmota_11
+  mode: single
+- id: '1724850441673'
+  alias: Свет кухня app
+  description: ''
+  trigger:
+  - event_data:
+      actionID: D7998894-CE4E-4459-9B29-659CF527BB13
+    platform: event
+    event_type: ios.action_fired
+  condition: []
+  action:
+  - service: switch.toggle
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.tasmota_2
+  mode: single
+- id: '1724850559017'
+  alias: Свет гостиная app
+  description: ''
+  trigger:
+  - event_type: ios.action_fired
+    event_data:
+      actionID: FAC56F0C-2DF9-4A73-B988-8FC400FB7227
+    platform: event
+  condition: []
+  action:
+  - service: switch.toggle
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.tasmota_tasmota2
+  mode: single
+- id: '1724850619917'
+  alias: Свет спальня app
+  description: ''
+  trigger:
+  - event_type: ios.action_fired
+    event_data:
+      actionID: 1B3AD778-F24D-461A-9DF1-E082F6FA7FCD
+    platform: event
+  condition: []
+  action:
+  - service: switch.toggle
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.tasmota_tasmota3
+  mode: single
+- id: '1724850676231'
+  alias: Свет детская app
+  description: ''
+  trigger:
+  - event_type: ios.action_fired
+    event_data:
+      actionID: 02D75916-0836-462A-9FFD-BE78E83D9C4F
+    platform: event
+  condition: []
+  action:
+  - service: switch.toggle
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.tasmota_7
+  mode: single
+- id: '1724850917969'
+  alias: Кондиционер app
+  description: ''
+  trigger:
+  - platform: event
+    event_type: ios.action_fired
+    event_data:
+      actionID: 847DBF82-3269-4464-955F-95CE77D984FF
+  condition: []
+  action:
+  - if:
+    - condition: device
+      device_id: b4d1986e9170f928dbff31caebefb162
+      domain: climate
+      entity_id: 734491128fd2c53bc85f36b0c5df86da
+      type: is_hvac_mode
+      hvac_mode: 'off'
+    then:
+    - device_id: b4d1986e9170f928dbff31caebefb162
+      domain: climate
+      entity_id: 734491128fd2c53bc85f36b0c5df86da
+      type: set_hvac_mode
+      hvac_mode: cool
+    else:
+    - device_id: b4d1986e9170f928dbff31caebefb162
+      domain: climate
+      entity_id: 734491128fd2c53bc85f36b0c5df86da
+      type: set_hvac_mode
+      hvac_mode: 'off'
+  mode: single
+- id: '1725869765920'
+  alias: Шторы. Закрытие Кухня
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - input_boolean.curtain_kitchen
+    to: 'on'
+    from: 'off'
+  condition: []
+  action:
+  - service: cover.set_cover_position
+    metadata: {}
+    data:
+      position: 0
+    target:
+      entity_id: cover.lumi_lumi_curtain_cover_3
+  mode: single
+- id: '1725872336316'
+  alias: Шторы. Закрытие Зал
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - input_boolean.curtain_hall
+    from: 'off'
+    to: 'on'
+  condition: []
+  action:
+  - service: cover.set_cover_position
+    metadata: {}
+    data:
+      position: 0
+    target:
+      device_id: 438c446d2c617f86871757130e4f90d8
+  mode: single
+- id: '1725872877068'
+  alias: Шторы. Закрытие Спальня
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - input_boolean.curtain_bedroom
+    from: 'off'
+    to: 'on'
+  condition: []
+  action:
+  - service: cover.set_cover_position
+    metadata: {}
+    data:
+      position: 0
+    target:
+      entity_id: cover.lumi_lumi_curtain_cover_2
   mode: single
