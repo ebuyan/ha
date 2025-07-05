@@ -27,3 +27,15 @@ services:
     volumes:
       - ./fileeditor:/config
       - ./homeassistant:/hass-config
+
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: mosquitto
+    ports:
+      - "1883:1883"
+    volumes:
+      - /etc/mosquitto/docker-mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - /etc/mosquitto/conf.d:/mosquitto/config/conf.d
+      - /var/lib/mosquitto:/mosquitto/data
+      - /var/log/mosquitto:/mosquitto/log
+    restart: unless-stopped
