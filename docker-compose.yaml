@@ -39,3 +39,14 @@ services:
       - /var/lib/mosquitto:/mosquitto/data
       - /var/log/mosquitto:/mosquitto/log
     restart: unless-stopped
+
+  filebrowser:
+    image: filebrowser/filebrowser
+    container_name: filebrowser
+    restart: unless-stopped
+    ports:
+      - "8088:80"
+    volumes:
+      - /mnt/usbssd:/srv            # Твой диск будет корнем в UI
+      - /etc/filebrowser/filebrowser.db:/database.db
+      - /etc/filebrowser/settings.json:/config/settings.json
