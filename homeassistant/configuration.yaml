@@ -11,20 +11,15 @@ automation: !include automations.yaml
 script: !include scripts.yaml
 scene: !include scenes.yaml
 # mDNS service in /etc/avahi/service/ha.service
-homekit:
-  port: 51827
+# homekit:
+#   port: 51827
 # For nginx https proxy
 http:
   use_x_forwarded_for: true
   trusted_proxies:
     - 127.0.0.1
 
-telegram_bot:
-  - platform: polling
-    api_key: !secret telegram_token
-    parse_mode: html
-    allowed_chat_ids:
-      - 623375633
+
 notify:
   - name: me
     platform: telegram
@@ -68,6 +63,34 @@ template:
       device_class: energy
       state_class: total
       state: "{{states('input_number.energy_total') }}"
+    - name: Потребление электроэнергии (кВт) 
+      unit_of_measurement: MWh 
+      state_class: total_increasing 
+      device_class: energy 
+      state: "{{ (states('input_number.energy_total') | float / 1000) | round(1) }}"
+    - name: Глубина септика
+      unit_of_measurement: см 
+      state: "{{ 300 - (states('sensor.tze284_kyyu8rbj_ts0601_glubina_zhidkosti') | int) }}"
+
+group:
+  ignored_entities:
+    entities:
+      - switch.tasmota_3
+      - sensor.tasmota_am2301_temperature
+      - sensor.tasmota_am2301_humidity
+      - camera.zhorik_map
+      - camera.zhorik_map_1
+ 
+sensor:
+- platform: template
+  sensors:
+    unavailable_entities:
+        friendly_name: Недоступные устройства
+        value_template: >
+          {{ states | selectattr('state','in',['unavailable']) | rejectattr('domain','eq','group') | rejectattr('entity_id', 'in', state_attr('group.ignored_entities', 'entity_id')) | rejectattr('entity_id', 'search', 'zhorik') | list | count }}
+        attribute_templates:
+          entities: >
+            {{ states|selectattr('state','in', ['unavailable']) | rejectattr('domain','eq','group') | rejectattr('entity_id', 'in', state_attr('group.ignored_entities','entity_id')) | rejectattr('entity_id', 'search', 'zhorik') | map(attribute='name') | list }}
 
 input_select:
   irrigate_zone:
@@ -84,7 +107,19 @@ input_datetime:
     has_date: false
     has_time: true
   irrigate_morning:
-    name: Автополив утром
+    name: Автополив газона утром время
+    has_date: false
+    has_time: true
+  irrigate_gas_evning:
+    name: Автополив газона вечером время
+    has_date: false
+    has_time: true
+  irrigate_gradki:
+    name: Автополив грядок время
+    has_date: false
+    has_time: true
+  irrigate_kust:
+    name: Автополив кусты время
     has_date: false
     has_time: true
   fumigator_time:
@@ -99,11 +134,26 @@ input_boolean:
   irrigate_morning:
     name: Автополив утром
     icon: mdi:water-pump
+  irrigate_evning_gas:
+    name: Автополив газона вечером
+    icon: mdi:water-pump
+  irrigate_morning_gas:
+    name: Автополив газона утром
+    icon: mdi:water-pump
+  irrigate_gradki:
+    name: Автополив грядок
+    icon: mdi:water-pump
+  irrigate_kust:
+    name: Автополив кустов
+    icon: mdi:water-pump
   irrigate_skip_evning:
     name: Автополив пропустить вечером
     icon: mdi:toggle-switch-outline
   irrigate_skip_morning:
     name: Автополив пропустить утром
+    icon: mdi:toggle-switch-outline
+  irrigate_skip:
+    name: Автополив пропустить
     icon: mdi:toggle-switch-outline
   irrigate_availeble:
     name: Автополив доступен
@@ -126,6 +176,12 @@ input_boolean:
   curtain_bedroom:
     name: Шторы спальня (input)
     icon: mdi:curtains-closed
+  alarm_enabled:
+    name: Охрана (input)
+    icon: mdi:shield-lock-outline
+  kalitka_auto:
+    name: Автокалитка (input)
+    icon: mdi:shield-lock-outline
 
 input_text:
   irrigation_active_zone:
@@ -146,6 +202,20 @@ input_number:
     icon: mdi:timer-cog
   irrigate_timer_2:
     name: Timer zone2
+    min: 1
+    max: 60
+    step: 1
+    unit_of_measurement: мин.
+    icon: mdi:timer-cog
+  irrigate_timer_morning_2:
+    name: Timer morninr zone2
+    min: 1
+    max: 60
+    step: 1
+    unit_of_measurement: мин.
+    icon: mdi:timer-cog
+  irrigate_timer_evening_2:
+    name: Timer evening zone2
     min: 1
     max: 60
     step: 1
@@ -220,4 +290,116 @@ switch:
               value: inactive
         icon_template: >-
           mdi:water-pump
+      irrigate_lawn_gas:
+        friendly_name: "Sprinkler On/Off Газон"
+        turn_on:
+          - service: timer.start
+            target:
+              entity_id: timer.irrigation_time_remaining
+            data:
+              duration: "{{ states('input_number.irrigate_timer_2') | int  * 60 }}"
+          - service: input_text.set_value
+            target:
+              entity_id: input_text.irrigation_active_zone
+            data:
+              value: "2"
+          - service: script.turn_on
+            data:
+              entity_id: script.irrigation_on
+        turn_off:
+          - service: script.turn_on
+            data:
+              entity_id: script.irrigation_off
+          - service: timer.finish
+            target:
+              entity_id: timer.irrigation_time_remaining
+          - service: input_text.set_value
+            target:
+              entity_id: input_text.irrigation_active_zone
+            data:
+              value: inactive
+      irrigate_lawn_gradki:
+        friendly_name: "Sprinkler On/Off Грядки"
+        turn_on:
+          - service: timer.start
+            target:
+              entity_id: timer.irrigation_time_remaining
+            data:
+              duration: "{{ states('input_number.irrigate_timer_1') | int  * 60 }}"
+          - service: input_text.set_value
+            target:
+              entity_id: input_text.irrigation_active_zone
+            data:
+              value: "1"
+          - service: script.turn_on
+            data:
+              entity_id: script.irrigation_on
+        turn_off:
+          - service: script.turn_on
+            data:
+              entity_id: script.irrigation_off
+          - service: timer.finish
+            target:
+              entity_id: timer.irrigation_time_remaining
+          - service: input_text.set_value
+            target:
+              entity_id: input_text.irrigation_active_zone
+            data:
+              value: inactive
+      irrigate_lawn_kust_facade:
+        friendly_name: "Sprinkler On/Off Кусты фасад"
+        turn_on:
+          - service: timer.start
+            target:
+              entity_id: timer.irrigation_time_remaining
+            data:
+              duration: "{{ states('input_number.irrigate_timer_4') | int  * 60 }}"
+          - service: input_text.set_value
+            target:
+              entity_id: input_text.irrigation_active_zone
+            data:
+              value: "4"
+          - service: script.turn_on
+            data:
+              entity_id: script.irrigation_on
+        turn_off:
+          - service: script.turn_on
+            data:
+              entity_id: script.irrigation_off
+          - service: timer.finish
+            target:
+              entity_id: timer.irrigation_time_remaining
+          - service: input_text.set_value
+            target:
+              entity_id: input_text.irrigation_active_zone
+            data:
+              value: inactive
+      irrigate_lawn_kust_terrace:
+        friendly_name: "Sprinkler On/Off Кусты террсаса"
+        turn_on:
+          - service: timer.start
+            target:
+              entity_id: timer.irrigation_time_remaining
+            data:
+              duration: "{{ states('input_number.irrigate_timer_3') | int  * 60 }}"
+          - service: input_text.set_value
+            target:
+              entity_id: input_text.irrigation_active_zone
+            data:
+              value: "3"
+          - service: script.turn_on
+            data:
+              entity_id: script.irrigation_on
+        turn_off:
+          - service: script.turn_on
+            data:
+              entity_id: script.irrigation_off
+          - service: timer.finish
+            target:
+              entity_id: timer.irrigation_time_remaining
+          - service: input_text.set_value
+            target:
+              entity_id: input_text.irrigation_active_zone
+            data:
+              value: inactive
         
