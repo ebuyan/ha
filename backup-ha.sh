@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo "[$(date)] Бэкап запущен" >> /var/log/ha_backup.log
+
 HA_CONFIG="/opt/ha/homeassistant"
 BACKUP_DIR="/mnt/usbssd/home-assistant-backups"
 NOW=$(date +"%Y-%m-%d_%H-%M")
