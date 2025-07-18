@@ -15,6 +15,21 @@ EXCLUDES=(
   --exclude="/var/tmp/*"
   --exclude="/var/cache/*"
   --exclude="/var/lib/docker/*"
+  --exclude="/var/lib/containerd/*"
+
+  # Домашние директории
+  --exclude="/home/*/.cache/*"
+  --exclude="/home/*/.npm/*"
+  --exclude="/home/*/.cargo/registry"
+  --exclude="/home/*/.cargo/git"
+  --exclude="/home/*/.local/share/Trash/*"
+  --exclude="/home/*/.thumbnails/*"
+  --exclude="/home/*/.config/Code/Cache/*"
+  --exclude="/home/*/.config/Code/CachedData/*"
+  --exclude="/home/*/.config/google-chrome/Default/Cache/*"
+  --exclude="/home/*/.config/google-chrome/Default/Code Cache/*"
+  --exclude="/home/*/.config/google-chrome/Default/Media Cache/*"
+  --exclude="/home/*/Downloads/*"
 )
 
 mkdir -p "$BACKUP_DIR/$DATE"
