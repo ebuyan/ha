@@ -19,6 +19,7 @@ EXCLUDES=(
   --exclude="/var/cache/*"
   --exclude="/var/lib/docker/*"
   --exclude="/var/lib/containerd/*"
+  --exclude="/var/log/*"
 
   # Домашние директории
   --exclude="/home/*/.cache/*"
@@ -39,5 +40,5 @@ mkdir -p "$BACKUP_DIR/$DATE"
 
 rsync -aAXv / "${EXCLUDES[@]}" "$BACKUP_DIR/$DATE" | tee "$BACKUP_DIR/backup-$DATE.log"
 
-# (Опционально) удалить бэкапы старше 90 дней
-find "$BACKUP_DIR" -maxdepth 1 -type d -mtime +90 -exec rm -rf {} +
+# (Опционально) удалить бэкапы старше 3 дней
+find "$BACKUP_DIR" -maxdepth 1 -type d -mtime +3 -exec rm -rf {} +
