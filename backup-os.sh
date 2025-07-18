@@ -14,6 +14,7 @@ EXCLUDES=(
   --exclude="/tmp/*"
   --exclude="/var/tmp/*"
   --exclude="/var/cache/*"
+  --exclude="/var/lib/docker/*"
 )
 
 mkdir -p "$BACKUP_DIR/$DATE"
