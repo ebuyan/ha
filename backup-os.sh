@@ -1,7 +1,14 @@
 #!/bin/bash
 
+set -e
+
 BACKUP_DIR="/mnt/usbssd/system-backup"
-DATE=$(date +%F_%H-%M)
+DATE=$(date +"%Y-%m-%d_%H-%M")
+DEST="$BACKUP_DIR/$DATE"
+LOG="$BACKUP_DIR/backup-$DATE.log"
+
+# Определяем последний существующий бэкап (исключаем текущий)
+LINK_DEST=$(find "$BACKUP_DIR" -mindepth 1 -maxdepth 1 -type d ! -name "$DATE" | sort | tail -n 1)
 
 EXCLUDES=(
   --exclude="/lib/firmware/*"
@@ -20,6 +27,7 @@ EXCLUDES=(
   --exclude="/var/lib/docker/*"
   --exclude="/var/lib/containerd/*"
   --exclude="/var/log/*"
+  --exclude="/opt/zigbee2mqtt/*"
 
   # Домашние директории
   --exclude="/home/*/.cache/*"
@@ -36,9 +44,14 @@ EXCLUDES=(
   --exclude="/home/*/Downloads/*"
 )
 
-mkdir -p "$BACKUP_DIR/$DATE"
+echo "==> Starting backup: $DATE" | tee "$LOG"
 
-rsync -aAXv / "${EXCLUDES[@]}" "$BACKUP_DIR/$DATE" | tee "$BACKUP_DIR/backup-$DATE.log"
+rsync -aAXv --delete \
+  --link-dest="$LINK_DEST" \
+  "${EXCLUDES[@]}" \
+  / "$DEST" | tee -a "$LOG"
 
-# (Опционально) удалить бэкапы старше 3 дней
-find "$BACKUP_DIR" -maxdepth 1 -type d -mtime +3 -exec rm -rf {} +
+echo "==> Cleaning old backups..." | tee -a "$LOG"
+find "$BACKUP_DIR" -mindepth 1 -maxdepth 1 -type d -mtime +90 -exec rm -rf {} \;
+
+echo "==> Backup completed at $(date)" | tee -a "$LOG"
