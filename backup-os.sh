@@ -4,6 +4,7 @@ BACKUP_DIR="/mnt/usbssd/system-backup"
 DATE=$(date +%F_%H-%M)
 
 EXCLUDES=(
+  --exclude="/swapfile"
   --exclude="/proc/*"
   --exclude="/sys/*"
   --exclude="/dev/*"
