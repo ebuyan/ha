@@ -49,3 +49,4 @@ services:
     volumes:
       - /mnt/usbssd:/srv
       - /etc/filebrowser:/config
+    command: ["--noauth"]
