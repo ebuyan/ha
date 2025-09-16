@@ -55,7 +55,7 @@ services:
     image: nextcloud
     container_name: nextcloud
     ports:
-      - "8089:80"
+      - "8099:80"
     volumes:
       - /mnt/usbssd/Media:/var/www/html
     restart: unless-stopped
