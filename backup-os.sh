@@ -1,6 +1,6 @@
 #!/bin/bash
 
-BACKUP_DIR="/mnt/usbssd/system-backup"
+BACKUP_DIR="/mnt/usbssd1/system-backup"
 DATE=$(date +%F_%H-%M)
 
 EXCLUDES=(
