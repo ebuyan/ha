@@ -50,3 +50,12 @@ services:
       - /mnt/usbssd:/srv
       - /etc/filebrowser:/config
     command: ["--noauth"]
+
+  nextcloud:
+    image: nextcloud
+    container_name: nextcloud
+    ports:
+      - "8089:80"
+    volumes:
+      - /mnt/usbssd/Media:/var/www/html
+    restart: unless-stopped
