@@ -57,5 +57,7 @@ services:
     ports:
       - "8099:80"
     volumes:
-      - /mnt/usbssd/Media:/var/www/html
+      - /mnt/usbssd/Media:/var/www/html/data
+      - /opt/nextcloud/config:/var/www/html/config
+      - /opt/nextcloud/apps:/var/www/html/apps
     restart: unless-stopped
